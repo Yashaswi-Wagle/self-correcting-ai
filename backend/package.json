@@ -13,6 +13,7 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
+    "@octokit/rest": "^22.0.1",
     "axios": "^1.17.0",
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",

@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const generateRoute = require('./routes/generate');
 const sessionsRoute = require('./routes/sessions');
+const githubRoute = require('./routes/github');
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/generate', generateRoute);
 app.use('/api/sessions', sessionsRoute);
+app.use('/api/github', githubRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
