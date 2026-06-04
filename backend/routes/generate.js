@@ -1,13 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
 const { generateCode, analyzeError, fixCode } = require('../services/claudeService');
 const { executeCode } = require('../services/executionService');
 const { lintCode } = require('../services/lintService');
+const { createSession, saveAttempt } = require('../services/dbService');
 
 router.post('/', async (req, res) => {
-  const { prompt, language = 'python', strategy = 'surgical' } = req.body;
+  const { prompt, language = 'python', strategy = 'surgical', sessionName } = req.body;
   const maxAttempts = 5;
   const attempts = [];
+
+  const sessionId = uuidv4();
+  const name = sessionName || `Session ${new Date().toLocaleString()}`;
+  createSession(sessionId, name, language);
 
   try {
     let code = await generateCode(prompt, language);
@@ -33,8 +39,21 @@ router.post('/', async (req, res) => {
 
       if (result.success) {
         const lint = await lintCode(code, language);
+
+        saveAttempt(sessionId, {
+          attemptNumber: attempt,
+          prompt,
+          code,
+          output: result.output,
+          error: result.error,
+          success: true,
+          strategy,
+          qualityScore: lint.score
+        });
+
         return res.json({
           success: true,
+          sessionId,
           finalCode: code,
           output: result.output,
           quality: {
@@ -45,6 +64,17 @@ router.post('/', async (req, res) => {
           attempts
         });
       }
+
+      saveAttempt(sessionId, {
+        attemptNumber: attempt,
+        prompt,
+        code,
+        output: result.output,
+        error: result.error,
+        success: false,
+        analysis: attemptData.analysis,
+        strategy
+      });
 
       if (attempt === maxAttempts) break;
 
@@ -57,6 +87,7 @@ router.post('/', async (req, res) => {
 
     res.json({
       success: false,
+      sessionId,
       message: 'Could not fix the code after maximum attempts',
       attempts
     });

@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const generateRoute = require('./routes/generate');
+const sessionsRoute = require('./routes/sessions');
 
 const app = express();
 app.use(cors());
@@ -13,6 +14,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/generate', generateRoute);
+app.use('/api/sessions', sessionsRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
