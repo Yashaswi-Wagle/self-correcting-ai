@@ -21,6 +21,38 @@ Task: ${userPrompt}`
   return response.choices[0].message.content;
 }
 
+async function analyzeError(code, error, language) {
+  const response = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 512,
+    messages: [
+      {
+        role: 'user',
+        content: `You are a code debugging expert. Analyze this ${language} code and its error.
+
+CODE:
+${code}
+
+ERROR:
+${error}
+
+Respond in exactly this format:
+ROOT_CAUSE: [one sentence explaining why it failed]
+ERROR_TYPE: [the category of error e.g. SyntaxError, LogicError, RuntimeError, TypeError]
+FIX_NEEDED: [one sentence describing what needs to change]`
+      }
+    ]
+  });
+
+  const text = response.choices[0].message.content;
+
+  const rootCause = text.match(/ROOT_CAUSE:\s*(.+)/)?.[1] || 'Unknown error';
+  const errorType = text.match(/ERROR_TYPE:\s*(.+)/)?.[1] || 'Unknown';
+  const fixNeeded = text.match(/FIX_NEEDED:\s*(.+)/)?.[1] || 'Review the code';
+
+  return { rootCause, errorType, fixNeeded };
+}
+
 async function fixCode(originalCode, error, language, strategy = 'surgical') {
   const strategies = {
     surgical: 'Fix only the specific lines causing the error. Minimal changes.',
@@ -59,4 +91,4 @@ Then provide the corrected code with no markdown or backticks.`
   };
 }
 
-module.exports = { generateCode, fixCode };
+module.exports = { generateCode, analyzeError, fixCode };
