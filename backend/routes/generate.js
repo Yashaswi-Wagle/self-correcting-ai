@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { generateCode, analyzeError, fixCode } = require('../services/claudeService');
 const { executeCode } = require('../services/executionService');
+const { lintCode } = require('../services/lintService');
 
 router.post('/', async (req, res) => {
   const { prompt, language = 'python', strategy = 'surgical' } = req.body;
@@ -31,10 +32,16 @@ router.post('/', async (req, res) => {
       attempts.push(attemptData);
 
       if (result.success) {
+        const lint = await lintCode(code, language);
         return res.json({
           success: true,
           finalCode: code,
           output: result.output,
+          quality: {
+            passed: lint.passed,
+            score: lint.score,
+            issues: lint.issues
+          },
           attempts
         });
       }
